@@ -7,7 +7,7 @@
     <style>
         .grid-container {
             display: grid;
-            grid-template-columns: repeat(4, 1fr); /* 3열로 정렬 */
+            grid-template-columns: repeat(4, 1fr); /* 4열로 정렬 */
             gap: 10px;
             margin-top: 20px;
         }
@@ -21,14 +21,89 @@
             color: blue;
             font-weight: bold;
         }
+        #copyButton {
+            margin-bottom: 15px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #copyButton:hover {
+            background-color: #0056b3;
+        }
+        #copyMessage {
+            margin-top: 10px;
+            color: green;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
+
+    <h2>JavaScript 코드 복사</h2>
+    <button id="copyButton">코드 복사</button>
+    <p id="copyMessage"></p>
+
     <h2>CSV 파일 업로드</h2>
     <input type="file" id="csvFile" accept=".csv">
     <div class="grid-container" id="output"></div> <!-- 그리드 배치 컨테이너 -->
 
     <script>
+        document.getElementById('copyButton').addEventListener('click', function() {
+            const codeToCopy = `let roomNumbers = ['11', '10', '12', '13', '14', '15', '1', '2', '3', '9', '4', '5', '16'];
+let allData = [];
+
+async function fetchAndSaveData(roomNumber) {
+    return new Promise(resolve => {
+        studyroom.goStudyRoomTable(roomNumber);
+
+        setTimeout(() => {
+            let divElement = document.querySelector('#calendarTable');
+            if (divElement) {
+                let textContent = divElement.innerText.trim();
+                let rows = textContent.split("\\n").map(row => row.trim());
+                let processedRows = rows.map(row => \`\${roomNumber},\${row}\`);
+                allData.push(...processedRows);
+            } else {
+                console.log(\`ID가 #calendarTable인 요소를 찾을 수 없습니다. (Room \${roomNumber})\`);
+            }
+            resolve();
+        }, 5000);
+    });
+}
+
+async function processAllRooms() {
+    for (let roomNumber of roomNumbers) {
+        await fetchAndSaveData(roomNumber);
+    }
+
+    if (allData.length > 0) {
+        let csvContent = "data:text/csv;charset=utf-8,Room,Data\\n" + allData.map(e => \`"\${e}"\`).join("\\n");
+        let encodedUri = encodeURI(csvContent);
+        let link = document.createElement("a");
+        link.href = encodedUri;
+        link.download = "calendar_data.csv";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    } else {
+        console.log("저장할 데이터가 없습니다.");
+    }
+}
+
+processAllRooms();`;
+
+            navigator.clipboard.writeText(codeToCopy).then(() => {
+                document.getElementById('copyMessage').innerText = "코드가 복사되었습니다!";
+            }).catch(err => {
+                console.error('복사 실패:', err);
+                document.getElementById('copyMessage').innerText = "복사 실패! 다시 시도해주세요.";
+            });
+        });
+
         document.getElementById('csvFile').addEventListener('change', function(event) {
             const file = event.target.files[0];
             if (!file) return;
