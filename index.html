@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV 분석기</title>
+    <style>
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr); /* 3열로 정렬 */
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .output-container {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .numbers {
+            color: blue;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h2>CSV 파일 업로드</h2>
+    <input type="file" id="csvFile" accept=".csv">
+    <div class="grid-container" id="output"></div> <!-- 그리드 배치 컨테이너 -->
+
+    <script>
+        document.getElementById('csvFile').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                processCSV(text);
+            };
+            reader.readAsText(file, 'utf-8');
+        });
+
+        function processCSV(data) {
+            const roomNumbers = ['"11', '"10', '"12', '"13', '"14', '"15', '"1', '"2', '"3', '"9', '"4', '"5', '"16'];
+            const days = ["( 월 )", "( 화 )", "( 수 )", "( 목 )", "( 금 )"];
+            const today = new Date().getDate();
+            let lines = data.split("\n");
+            let outputElement = document.getElementById("output");
+            outputElement.innerHTML = ""; // 기존 출력 초기화
+
+            let roomElements = {}; // 각 방을 저장하는 객체
+
+            lines.forEach(line => {
+                let row = line.split(",");
+
+                row.forEach(cell => {
+                    if (days.some(day => cell.includes(day))) {
+                        let numbers = (cell.match(/\d+/g) || []).map(Number);
+                        let rowStr = row.join(",");
+                        let daycall = rowStr.split(",").slice(-1)[0].split("\t")[0];
+                        let target = rowStr.split(",")[0];
+
+                        let index = roomNumbers.indexOf(target);
+                        if (index === -1) return; // 유효한 방 번호가 아닌 경우 무시
+
+                        let recenttime = (daycall.match(/\d+/g) || []).map(Number);
+                        if (recenttime.length > 0 && recenttime[0] >= today) {
+                            let roomId = `room-${index + 1}`; // 고유한 ID 생성
+
+                            if (!roomElements[roomId]) {
+                                // 새로운 방이면 div 생성 후 저장
+                                let roomDiv = document.createElement("div");
+                                roomDiv.classList.add("output-container");
+                                roomDiv.id = roomId;
+                                roomDiv.innerHTML = `<h3>${index + 1} 스터디룸</h3>`; // 타이틀 추가
+                                roomElements[roomId] = roomDiv;
+                            }
+
+                            // 정보 추가
+                            roomElements[roomId].innerHTML += `<p><strong>${daycall} :</strong> <span class="numbers">${numbers.slice(2).join(", ")}</span></p>`;
+                        }
+                    }
+                });
+            });
+
+            // 방을 그리드에 추가
+            Object.values(roomElements).forEach(roomDiv => outputElement.appendChild(roomDiv));
+        }
+    </script>
+</body>
+</html>
